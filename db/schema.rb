@@ -11,9 +11,10 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.0].define(version: 2025_05_05_170947) do
-  create_table "transactions", force: :cascade do |t|
-    t.string "raw_message"
+  create_table "transactions", primary_key: "transaction_id", id: :string, force: :cascade do |t|
+    t.string "raw_message", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["transaction_id"], name: "index_transactions_on_transaction_id", unique: true
   end
 end
