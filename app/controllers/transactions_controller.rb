@@ -8,7 +8,10 @@ class TransactionsController < ApplicationController
 
   # GET /transactions/1 or /transactions/1.json
   def show
-    render json: @transaction.as_json
+    respond_to do |format|
+      format.html
+      format.json { render json: @transaction }
+    end
   end
 
   # GET /transactions/new
@@ -26,8 +29,7 @@ class TransactionsController < ApplicationController
 
     respond_to do |format|
       if @transaction.save
-        # format.html { redirect_to @transaction, notice: "Transaction was successfully created." }
-        format.html { render :show, status: :created, location: @transaction }
+        format.html { redirect_to @transaction, notice: "Transaction was successfully created." }
         format.json { render :show, status: :created, location: @transaction }
       else
         format.html { render :new, status: :unprocessable_entity }

@@ -13,10 +13,11 @@
 
   <div>
     <%= form.label "Enter your transaction", style: "display: block" %>
-    <%= form.text_field :raw_message, placeholder: "20522.00104VISA310BURGERBARN" %>
+    <%= form.text_field :raw_message, placeholder: "20522.00104VISA310BURGERBARN", style: "width: 500px" %>
   </div>
 
   <div>
     <%= form.submit %>
+    <%= link_to "Cancel", transactions_path %>
   </div>
 <% end %>

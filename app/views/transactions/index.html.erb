@@ -4,7 +4,7 @@
 
 <h1>Transactions</h1>
 
-<%= link_to "New transaction", new_transaction_path %>
+<%= button_to "New", new_transaction_path, method: :get %>
 
 <div id="transactions">
   <% @transactions.each do |transaction| %>

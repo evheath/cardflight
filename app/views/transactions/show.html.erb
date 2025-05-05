@@ -1,0 +1,9 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @transaction %>
+
+<%= link_to "Raw JSON", transaction_path(@transaction, format: :json) %>
+
+<%= link_to "View all transactions", transactions_path %>
+
+<%= link_to "Create new transaction", new_transaction_path %>
