@@ -3,11 +3,12 @@ class TransactionsController < ApplicationController
 
   # GET /transactions or /transactions.json
   def index
-    @transactions = Transaction.all
+    @transactions = Transaction.all.order(created_at: :desc)
   end
 
   # GET /transactions/1 or /transactions/1.json
   def show
+    render json: @transaction.as_json
   end
 
   # GET /transactions/new
@@ -25,7 +26,8 @@ class TransactionsController < ApplicationController
 
     respond_to do |format|
       if @transaction.save
-        format.html { redirect_to @transaction, notice: "Transaction was successfully created." }
+        # format.html { redirect_to @transaction, notice: "Transaction was successfully created." }
+        format.html { render :show, status: :created, location: @transaction }
         format.json { render :show, status: :created, location: @transaction }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -36,25 +38,10 @@ class TransactionsController < ApplicationController
 
   # PATCH/PUT /transactions/1 or /transactions/1.json
   def update
-    respond_to do |format|
-      if @transaction.update(transaction_params)
-        format.html { redirect_to @transaction, notice: "Transaction was successfully updated." }
-        format.json { render :show, status: :ok, location: @transaction }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @transaction.errors, status: :unprocessable_entity }
-      end
-    end
   end
 
-  # DELETE /transactions/1 or /transactions/1.json
   def destroy
-    @transaction.destroy!
-
-    respond_to do |format|
-      format.html { redirect_to transactions_path, status: :see_other, notice: "Transaction was successfully destroyed." }
-      format.json { head :no_content }
-    end
+    # do nothing
   end
 
   private
