@@ -1,11 +1,33 @@
 <div id="<%= dom_id transaction %>">
+
   <p>
     <strong>version:</strong>
     <%= transaction.version %>
   </p>
+
   <p>
-    <strong>transaction_id:</strong>
-    <%= transaction.transaction_id %>
+  <strong>transaction_id:</strong>
+  <%= transaction.transaction_id %>
+  </p>
+
+  <p>
+    <strong>amount:</strong>
+    <%= transaction.amount %>
+  </p>
+
+  <p>
+    <strong>network:</strong>
+    <%= transaction.network %>
+  </p>
+
+  <p>
+    <strong>transaction descriptor:</strong>
+    <%= transaction.transaction_descriptor %>
+  </p>
+
+  <p>
+    <strong>merchant:</strong>
+    <%= transaction.merchant %>
   </p>
   <p>
     <strong>raw_message:</strong>

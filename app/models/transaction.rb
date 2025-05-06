@@ -44,8 +44,8 @@ class Transaction < ApplicationRecord
           self.network = pop_x_letters!(working_string, length)
         when "2"
           # transaction amount
-          amount = pop_x_letters!(working_string, length)
-          puts "amount: #{amount}"
+          amount = pop_x_letters!(working_string, length).to_f
+          self.amount = (amount * 100).to_i
         when "3"
           # merchant
           self.merchant = pop_x_letters!(working_string, length)
