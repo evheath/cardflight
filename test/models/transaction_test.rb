@@ -34,4 +34,9 @@ class TransactionTest < ActiveSupport::TestCase
     t.valid?
     assert_equal "ABFFFF", t.transaction_descriptor
   end
+
+  test "version included in json matches the version method" do
+    t = Transaction.new
+    assert_equal t.version, t.as_json[:version]
+  end
 end
