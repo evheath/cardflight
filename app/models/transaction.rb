@@ -26,6 +26,7 @@ class Transaction < ApplicationRecord
 
     def parse_raw_message
       return if raw_message.blank?
+
       working_string = raw_message.dup
       until working_string.empty?
         tag = pop_x_letters!(working_string, 1)
@@ -34,13 +35,20 @@ class Transaction < ApplicationRecord
           @parsing_error = "Invalid raw_message: length for tag '#{tag}' could not be parsed from '#{raw_message}'"
           break
         end
+
+        # parse the tag
+        puts "tag: #{tag}, length: #{length}, working_string: #{working_string}"
         case tag
         when "1"
           # payment network
+          self.network = pop_x_letters!(working_string, length)
         when "2"
           # transaction amount
+          amount = pop_x_letters!(working_string, length)
+          puts "amount: #{amount}"
         when "3"
           # merchant
+          self.merchant = pop_x_letters!(working_string, length)
         else
           @parsing_error = "Invalid raw_message: unknown tag '#{tag}' in '#{raw_message}'"
           break
