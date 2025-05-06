@@ -27,35 +27,36 @@ class Transaction < ApplicationRecord
     def parse_raw_message
       return if raw_message.blank?
 
+      # parse the tags
       working_string = raw_message.dup
       until working_string.empty?
         tag = pop_x_letters!(working_string, 1)
         length = pop_x_letters!(working_string, 2).to_i
         if length == 0
-          @parsing_error = "Invalid raw_message: length for tag '#{tag}' could not be parsed from '#{raw_message}'"
+          @parsing_error = "length for tag '#{tag}' could not be parsed from '#{raw_message}'"
           break
         end
-
-        # parse the tag
-        puts "tag: #{tag}, length: #{length}, working_string: #{working_string}"
         case tag
         when "1"
-          # payment network
           self.network = pop_x_letters!(working_string, length)
         when "2"
-          # transaction amount
           amount = pop_x_letters!(working_string, length).to_f
           self.amount = (amount * 100).to_i
         when "3"
-          # merchant
           self.merchant = pop_x_letters!(working_string, length)
         else
-          @parsing_error = "Invalid raw_message: unknown tag '#{tag}' in '#{raw_message}'"
+          @parsing_error = "unknown tag '#{tag}' in '#{raw_message}'"
           break
         end
-
       end
-      # pop the first letter
+
+      # handle transaction_descriptor
+      case self.network
+      when "VISA"
+        self.transaction_descriptor = self.amount.to_s.rjust(8, "0")
+      else
+        @parsing_error = "unknown network '#{self.network}' in '#{raw_message}'"
+      end
     end
 
     def raw_message_format_valid
