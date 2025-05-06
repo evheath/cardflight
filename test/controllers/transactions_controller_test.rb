@@ -20,6 +20,7 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
       post transactions_url, params: { transaction: { raw_message: @transaction.raw_message } }
     end
 
+
     assert_redirected_to transaction_url(Transaction.last)
   end
 

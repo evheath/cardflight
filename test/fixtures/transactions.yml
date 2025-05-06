@@ -1,7 +1,5 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  raw_message: MyString
-
-two:
-  raw_message: MyString
+  raw_message: 309SMAINFRMR108DISCOVER2070100.95
+  transaction_id: "7204ae3e-d51f-48e7-ab0a-ac7256648d67"
