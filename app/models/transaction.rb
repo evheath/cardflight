@@ -34,7 +34,7 @@ class Transaction < ApplicationRecord
         length = pop_x_letters!(working_string, 2).to_i
         if length == 0
           @parsing_error = "length for tag '#{tag}' could not be parsed from '#{raw_message}'"
-          break
+          return
         end
         case tag
         when "1"
@@ -43,19 +43,20 @@ class Transaction < ApplicationRecord
           amount = pop_x_letters!(working_string, length).to_f
           self.amount = (amount * 100).to_i
         when "3"
-          self.merchant = pop_x_letters!(working_string, length)
+          self.merchant = pop_x_letters!(working_string, length).truncate(10, omission: "")
         else
-          @parsing_error = "unknown tag '#{tag}' in '#{raw_message}'"
-          break
+          pop_x_letters!(working_string, length)
         end
       end
 
       # handle transaction_descriptor
       case self.network
+      when ""
+        @parsing_error = "network could not be parsed from '#{raw_message}'"
       when "VISA"
         self.transaction_descriptor = self.amount.to_s.rjust(8, "0")
       else
-        @parsing_error = "unknown network '#{self.network}' in '#{raw_message}'"
+        self.transaction_descriptor = self.network.first(2) + "FFFF"
       end
     end
 
