@@ -22,4 +22,16 @@ class TransactionTest < ActiveSupport::TestCase
     assert t.transaction_id.is_a?(String)
     assert t.transaction_id.match?(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
   end
+
+  test "creates valid transaction_descriptor for VISA transactions" do
+    t = Transaction.create(raw_message: "20522.00104VISA310BURGERBARN")
+    t.valid?
+    assert_equal "00002200", t.transaction_descriptor
+  end
+
+  test "creates valid transaction_descriptor for non VISA transactions" do
+    t = Transaction.create(raw_message: "20522.00104ABCD310BURGERBARN")
+    t.valid?
+    assert_equal "ABFFFF", t.transaction_descriptor
+  end
 end
