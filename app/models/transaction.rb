@@ -14,7 +14,7 @@ class Transaction < ApplicationRecord
   end
 
   def as_json(options = {})
-    super(options).except("created_at", "updated_at").merge(version: version)
+    super(options).except("created_at", "updated_at").merge(version: version, amount: amount.to_s)
   end
 
   private
