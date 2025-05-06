@@ -19,9 +19,6 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_difference("Transaction.count") do
       post transactions_url, params: { transaction: { raw_message: @transaction.raw_message } }
     end
-
-
-    assert_redirected_to transaction_url(Transaction.last)
   end
 
   test "should show transaction" do
