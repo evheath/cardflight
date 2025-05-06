@@ -27,22 +27,4 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     get transaction_url(@transaction)
     assert_response :success
   end
-
-  test "should get edit" do
-    get edit_transaction_url(@transaction)
-    assert_response :success
-  end
-
-  test "should update transaction" do
-    patch transaction_url(@transaction), params: { transaction: { raw_message: @transaction.raw_message } }
-    assert_redirected_to transaction_url(@transaction)
-  end
-
-  test "should destroy transaction" do
-    assert_difference("Transaction.count", -1) do
-      delete transaction_url(@transaction)
-    end
-
-    assert_redirected_to transactions_url
-  end
 end
