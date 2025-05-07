@@ -23,6 +23,18 @@
   </head>
 
   <body>
+    <header>
+      <nav>
+        <ul>
+          <li><%= link_to "Home", root_path %></li>
+        </ul>
+      </nav>
+    </header>
+
     <%= yield %>
+
+    <footer>
+      <p>Made by <a href="https://businessfactory.dev/about">Elliot Heath</a></p>
+    </footer>
   </body>
 </html>
