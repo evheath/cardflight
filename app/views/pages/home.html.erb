@@ -2,12 +2,11 @@
 <p> 
 Hello good people of CardFlight! 
 
-I know you are a rails shop, so what better way to submit my technical assessment than by building a rails app? 
+I know you are a Ruby on Rails team, so what better way to submit my technical assessment than by building a Rails app? 
 
 If you are curious about the app, it is running Rails <%= Rails.version %> and is deployed to a Ubuntu 24.04 VPS. 
 
 You can find the complete codebase in <%= link_to "this GitHub repo", "https://github.com/evheath/cardflight" %>.
-
 
 Okay, onto the task at hand.
 </p>
@@ -20,10 +19,15 @@ Okay, onto the task at hand.
 When the user posts a <code>raw_message</code> like <code>20522.00104VISA310BURGERBARN</code> to the <code>/transactions</code> endpoint, the <%= link_to "transaction model", "https://github.com/evheath/cardflight/blob/main/app/models/transaction.rb" %> is responsible for parsing the message and creating a new transaction.
 </p>
 <p>
-While I don't have a function exactly named <code>processTransaction</code>, the processing happens in this private method:
+While I don't have a function exactly named <code>processTransaction</code>, the processing happens in the transaction's <code>parse_raw_message</code> method:
 </p>
 <pre>
 <code>
+class Transaction < ApplicationRecord
+  before_validation :parse_raw_message, on: :create
+  # ...
+  private
+    # ...
     def parse_raw_message
       return if raw_message.blank?
 
@@ -59,6 +63,8 @@ While I don't have a function exactly named <code>processTransaction</code>, the
         self.transaction_descriptor = self.network.first(2) + "FFFF"
       end
     end
+    # ...
+end
 </code>
 </pre>
 <p>
@@ -75,3 +81,42 @@ E.g. <code>20522.00104VISA310BURGERBARN306COSTCO</code> will result in a transac
 <p>
 Another observation is that the <code>transaction_descriptor</code> for <code>VISA</code> assumes that the amount is not more than 8 digits, which is a reasonable assumption for a credit card transaction. Since there was nothing in the spec on handling amounts larger than 8 digits, I am not handling that case. However, if asked how I would handle such a case, I would probably check the <code>length</code> of the amount and if it is greater than 8 digits, I would set a <code>@parsing_error</code> and return.
 </p>
+
+<h3>Creating <code>transaction_id</code></h3>
+
+<p>
+By default, Rails uses <code>id:integer</code> as the primary key for a model, so it is worth detailing how I created the <code>transaction_id</code> for this model.
+
+First lets look at the migration:
+</p>
+
+<pre>
+<code>
+class CreateTransactions < ActiveRecord::Migration[8.0]
+  def change
+    create_table :transactions, id: false do |t|
+      t.string :transaction_id, null: false, primary_key: true
+      # ...
+    end
+    add_index :transactions, :transaction_id, unique: true
+  end
+end
+</code>
+</pre>
+
+<p>
+This ensures the model is created without the default <code>id</code> column, and that the <code>transaction_id</code> is the primary key. Since sqlite doesn't support UUID fields out of the box, we need to hanlde their generation inside the model:
+</p>
+
+<pre>
+<code>
+class Transaction < ApplicationRecord
+  self.primary_key = "transaction_id"
+  # ...
+  before_create do
+    self.transaction_id ||= SecureRandom.uuid
+  end
+  #...
+end
+</code>
+</pre>
