@@ -10,7 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_07_125815) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_07_131801) do
+  create_table "addresses", force: :cascade do |t|
+    t.integer "customer_id", null: false
+    t.integer "primary_address"
+    t.string "street_address"
+    t.string "city"
+    t.string "state"
+    t.string "zipcode"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_addresses_on_customer_id"
+  end
+
   create_table "customers", force: :cascade do |t|
     t.string "first_name"
     t.string "last_name"
@@ -29,4 +41,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_07_125815) do
     t.string "transaction_descriptor"
     t.index ["transaction_id"], name: "index_transactions_on_transaction_id", unique: true
   end
+
+  add_foreign_key "addresses", "customers"
 end
