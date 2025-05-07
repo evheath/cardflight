@@ -11,3 +11,14 @@ You can find the complete codebase in <%= link_to "this GitHub repo", "https://g
 
 Okay, onto the task at hand.
 </p>
+
+<h1>Part 1: Processing Transactions</h1>
+
+<p>Feel free to play around with my implementation <%= link_to "here", transactions_path %>.</p>
+<p>
+This part of the assessment is best represented by the <%= link_to "transaction model", "https://github.com/evheath/cardflight/blob/main/app/models/transaction.rb" %>.
+There is a corresponding controller as well which is relevant to handling the input and output, but the model is where the business logic lives.
+</p>
+<p>
+When the user posts a <code>raw_message</code> like <code>20522.00104VISA310BURGERBARN</code> to the <code>/transactions</code> endpoint, the app will parse the message and add a new transaction (if it is valid) to the sqlite database.
+</p>
