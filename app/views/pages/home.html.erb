@@ -19,7 +19,7 @@ Okay, onto the task at hand.
 When the user posts a <code>raw_message</code> like <code>20522.00104VISA310BURGERBARN</code> to the <code>/transactions</code> endpoint, the <%= link_to "transaction model", "https://github.com/evheath/cardflight/blob/main/app/models/transaction.rb" %> is responsible for parsing the message and creating a new transaction.
 </p>
 <p>
-While I don't have a function exactly named <code>processTransaction</code>, the processing happens in the transaction's <code>parse_raw_message</code> method:
+While I don't have a function exactly named <code>processTransaction</code>, the processing happens in the transaction's <code>parse_raw_message</code> method all the same:
 </p>
 <pre>
 <code>
@@ -68,15 +68,17 @@ end
 </code>
 </pre>
 <p>
-This method handles the heavy lifting of parsing out the <code>network</code>, <code>amount</code>, and <code>merchant</code> tags from the POSTed <code>raw_message</code> and creating the appropriate <code>transaction_descriptor</code> all according to spec.
+This method handles the heavy lifting of parsing out the <code>network</code>, <code>amount</code>, and <code>merchant</code> tags from the POSTed <code>raw_message</code> and creating the appropriate <code>transaction_descriptor</code>, all according to spec of course.
 
-This method is also capable of gracefully ignoring unrecognized tags so long as they are properly formatted, and will set a parsing error if not.
+This method is also capable of gracefully ignoring unrecognized tags so long as they are properly formatted.
+
+If a tag--recognized or not--is invalidly formatted, a parsing error will be set and no transaction created.
 
 </p>
 <p>
-One thing I observed is that duplicate tags are not specified in the spec, so this implementation will simply use the last tag it sees.
+One thing I observed is that handling duplicate tags is not specified in the spec, so this implementation simply uses the last tag it sees.
 
-E.g. <code>20522.00104VISA310BURGERBARN306COSTCO</code> will result in a transaction with <code>merchant</code> set to  <code>"COSTCO"</code>.
+E.g. <code>20522.00104VISA310BURGERBARN306COSTCO</code> will result in a transaction with <code>merchant</code> set to  <code>"COSTCO"</code> not <code>"BURGERBARN"</code>.
 </p>
 <p>
 Another observation is that the <code>transaction_descriptor</code> for <code>VISA</code> assumes that the amount is not more than 8 digits, which is a reasonable assumption for a credit card transaction. Since there was nothing in the spec on handling amounts larger than 8 digits, I am not handling that case. However, if asked how I would handle such a case, I would probably check the <code>length</code> of the amount and if it is greater than 8 digits, I would set a <code>@parsing_error</code> and return.
@@ -193,7 +195,7 @@ end
 </pre>
 
 <p>
-After seeding the database with data that matched the prompt, I played around with queries inside <code>bin/rails console</code> until I settled on the following:
+Then after seeding the database with data that matched the prompt, I played around with queries inside <code>bin/rails console</code> until I settled on the following:
 </p>
 <pre>
 <code>
@@ -236,6 +238,6 @@ Sam|Smith|21 Oak Ln|Westbury|NY|11590
 
 <h1>Conclusion</h1>
 <p>
-Thank you for your consideration! I hope you enjoyed seeing my submission as much as I enjoyed building it. This was the first time I've ever made anything using embedded ruby templates--typically I use React for the frontend--so I developed a new appreciation for the power of Rails. Lastly I am very impressed with Kamal's ability to deploy Rails apps; it feels like I am running my own Heroku!
+Thank you for your consideration! I hope you enjoyed seeing my submission as much as I enjoyed building it. This was the first time I've ever made anything using embedded ruby templates--typically I use React for the frontend--so I developed a new appreciation for the power of Rails. Lastly, I am very impressed with Kamal's ability to deploy Rails apps; it feels like I am running my own Heroku!
 </p>
 
