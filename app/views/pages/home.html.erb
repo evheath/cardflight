@@ -4,7 +4,7 @@ Hello good people of CardFlight!
 
 I know you are a rails shop, so what better way to submit my technical assessment than by building a rails app? 
 
-If you are curious about the app, it is running Rails <%= Rails.version %> and Ruby <%= RUBY_VERSION %> and it deployed to a Ubuntu 24.04 server on Akamai (formerly Linode). 
+If you are curious about the app, it is running Rails <%= Rails.version %> and is deployed to a Ubuntu 24.04 VPS. 
 
 You can find the complete codebase in <%= link_to "this GitHub repo", "https://github.com/evheath/cardflight" %>.
 
@@ -15,10 +15,63 @@ Okay, onto the task at hand.
 <h1>Part 1: Processing Transactions</h1>
 
 <p>Feel free to play around with my implementation <%= link_to "here", transactions_path %>.</p>
+<h3>Parsing the raw_message</h3>
 <p>
-This part of the assessment is best represented by the <%= link_to "transaction model", "https://github.com/evheath/cardflight/blob/main/app/models/transaction.rb" %>.
-There is a corresponding controller as well which is relevant to handling the input and output, but the model is where the business logic lives.
+When the user posts a <code>raw_message</code> like <code>20522.00104VISA310BURGERBARN</code> to the <code>/transactions</code> endpoint, the <%= link_to "transaction model", "https://github.com/evheath/cardflight/blob/main/app/models/transaction.rb" %> is responsible for parsing the message and creating a new transaction.
 </p>
 <p>
-When the user posts a <code>raw_message</code> like <code>20522.00104VISA310BURGERBARN</code> to the <code>/transactions</code> endpoint, the app will parse the message and add a new transaction (if it is valid) to the sqlite database.
+While I don't have a function exactly named <code>processTransaction</code>, the processing happens in this private method:
+</p>
+<pre>
+<code>
+    def parse_raw_message
+      return if raw_message.blank?
+
+      # parse the tags
+      working_string = raw_message.dup
+      until working_string.empty?
+        tag = pop_x_letters!(working_string, 1)
+        length = pop_x_letters!(working_string, 2).to_i
+        if length == 0
+          @parsing_error = "length for tag '#{tag}' could not be parsed from '#{raw_message}'"
+          return
+        end
+        case tag
+        when "1"
+          self.network = pop_x_letters!(working_string, length)
+        when "2"
+          amount = pop_x_letters!(working_string, length).to_f
+          self.amount = (amount * 100).to_i
+        when "3"
+          self.merchant = pop_x_letters!(working_string, length).truncate(10, omission: "")
+        else
+          pop_x_letters!(working_string, length)
+        end
+      end
+
+      # handle transaction_descriptor
+      case self.network
+      when ""
+        @parsing_error = "network could not be parsed from '#{raw_message}'"
+      when "VISA"
+        self.transaction_descriptor = self.amount.to_s.rjust(8, "0")
+      else
+        self.transaction_descriptor = self.network.first(2) + "FFFF"
+      end
+    end
+</code>
+</pre>
+<p>
+This method handles the heavy lifting of parsing out the <code>network</code>, <code>amount</code>, and <code>merchant</code> tags from the POSTed <code>raw_message</code> and creating the appropriate <code>transaction_descriptor</code> all according to spec.
+
+This method is also capable of gracefully ignoring unrecognized tags so long as they are properly formatted, and will set a parsing error if not.
+
+</p>
+<p>
+One thing I observed is that duplicate tags are not specified in the spec, so this implementation will simply use the last tag it sees.
+
+E.g. <code>20522.00104VISA310BURGERBARN306COSTCO</code> will result in a transaction with <code>merchant</code> set to  <code>"COSTCO"</code>.
+</p>
+<p>
+Another observation is that the <code>transaction_descriptor</code> for <code>VISA</code> assumes that the amount is not more than 8 digits, which is a reasonable assumption for a credit card transaction. Since there was nothing in the spec on handling amounts larger than 8 digits, I am not handling that case. However, if asked how I would handle such a case, I would probably check the <code>length</code> of the amount and if it is greater than 8 digits, I would set a <code>@parsing_error</code> and return.
 </p>
