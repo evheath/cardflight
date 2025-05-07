@@ -135,7 +135,7 @@ For example, here is the most recent transaction in the database, rendered using
 </p>
 
 <div style="border: 1px solid black; padding: 10px; margin: 10px;">
-<%= render Transaction.last %>
+  <%= render Transaction.order(created_at: :desc).first %>
 </div>
 
 <p>
@@ -143,7 +143,7 @@ If you haven't yet already,  <%= link_to "go create a transaction", new_transact
 </p>
 
 <p>
-The raw JSON of the transactions are made available at endpoints like <%= link_to "this", transaction_path(Transaction.last, format: :json) %>. Think of it as the output of <code>processTransaction("<%= Transaction.last().raw_message %>")</code>.
+The raw JSON of the transactions are made available at endpoints like <%= link_to "this", transaction_path(Transaction.last, format: :json) %>. Think of it as the output of <code>processTransaction("<%= Transaction.order(created_at: :desc).first.raw_message %>")</code>.
 </p>
 
 <h1>Part 2: SQL exercise</h1>
