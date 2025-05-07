@@ -141,3 +141,96 @@ If you haven't yet already,  <%= link_to "go create a transaction", new_transact
 <p>
 The raw JSON of the transactions are made available at endpoints like <%= link_to "this", transaction_path(Transaction.last, format: :json) %>. Think of it as the output of <code>processTransaction("<%= Transaction.last().raw_message %>")</code>.
 </p>
+
+<h1>Part 2: SQL exercise</h1>
+
+<p>
+Assuming there is nothing to be done with timezones, the answer to the question is:
+</p>
+<pre>
+<code>
+SELECT customers.first_name, customers.last_name, addresses.street_address, addresses.city, addresses.state, addresses.zipcode
+FROM addresses 
+INNER JOIN customers ON customers.id = addresses.customer_id 
+WHERE addresses.primary_address = 1 
+  AND customers.active = 1 
+  AND customers.created_at BETWEEN '2024-01-01' AND '2024-07-01';
+</code>
+</pre>
+
+<p>
+How did I arrive at this answer? Not easily 😅. My SQL skills aren't on the same level as my Rails skills, so naturally I found the answer through ActiveRecord queries. First I created the following migrations:
+</p>
+
+<pre>
+<code>
+class CreateCustomers < ActiveRecord::Migration[8.0]
+  def change
+    create_table :customers do |t|
+      t.string :first_name
+      t.string :last_name
+      t.integer :active
+
+      t.timestamps
+    end
+  end
+end
+class CreateAddresses < ActiveRecord::Migration[8.0]
+  def change
+    create_table :addresses do |t|
+      t.references :customer, null: false, foreign_key: true
+      t.integer :primary_address
+      t.string :street_address
+      t.string :city
+      t.string :state
+      t.string :zipcode
+
+      t.timestamps
+    end
+  end
+end
+</code>
+</pre>
+
+<p>
+After seeding the database with data that matched the prompt, I played around with queries inside <code>bin/rails console</code> until I settled on the following:
+</p>
+<pre>
+<code>
+cardflight(dev)> start_date = Date.new(2024,1,1)
+cardflight(dev)> end_date = Date.new(2024,7,1)
+cardflight(dev)> Address.joins(:customer)
+cardflight(dev)>   .where(primary_address: 1)
+cardflight(dev)>   .where(customers: { active: 1 })
+cardflight(dev)>   .where(customers: { created_at: start_date..end_date })
+cardflight(dev)>
+  Address Load (0.3ms)  SELECT "addresses".* FROM "addresses" INNER JOIN "customers" ON "customers"."id" = "addresses"."customer_id" WHERE "addresses"."primary_address" = 1 AND "customers"."active" = 1 AND "customers"."created_at" BETWEEN '2024-01-01' AND '2024-07-01' /* loading for pp */ LIMIT 11 /*application='Cardflight'*/
+=>
+  id: 2,
+  customer_id: 1,
+  primary_address: 1,
+  street_address: "21 Oak Ln",
+  city: "Westbury",
+  state: "NY",
+  zipcode: "11590",
+  created_at: "2025-05-07 13:31:15.331000000 +0000",
+  updated_at: "2025-05-07 13:31:15.331000000 +0000"
+</code>
+</pre>
+
+<p>
+This got the data I needed, just not in the required format. From here I manually edited the <code>SELECT</code> statement of the generated SQL. To validate the final output, I ran the folloing inside <code>bin/rails db</code>:
+</p>
+
+<pre>
+<code>
+sqlite> SELECT customers.first_name, customers.last_name, addresses.street_address, addresses.city, addresses.state, addresses.zipcode
+...>    FROM addresses
+...>    INNER JOIN customers ON customers.id = addresses.customer_id
+...>    WHERE addresses.primary_address = 1
+...>    AND customers.active = 1
+...>    AND customers.created_at BETWEEN '2024-01-01' AND '2024-07-01';
+Sam|Smith|21 Oak Ln|Westbury|NY|11590
+</code>
+</pre>
+
