@@ -1,0 +1,243 @@
+<%= image_tag "/cardflight_logo.png", alt: "Cardflight Logo", style: "margin-top: 20px; margin-bottom: 20px;" %>
+<p> 
+Hello good people of CardFlight! 
+
+I know you are a Ruby on Rails team, so what better way to submit my technical assessment than by building a Rails app? 
+
+If you are curious about the app, it is running Rails <%= Rails.version %> and is deployed to a Ubuntu 24.04 VPS. 
+
+You can find the complete codebase in <%= link_to "this GitHub repo", "https://github.com/evheath/cardflight" %>.
+
+Okay, onto the task at hand.
+</p>
+
+<h1>Part 1: Processing Transactions</h1>
+
+<p>Feel free to play around with my implementation <%= link_to "here", transactions_path %>.</p>
+<h3>Parsing the raw_message</h3>
+<p>
+When the user posts a <code>raw_message</code> like <code>20522.00104VISA310BURGERBARN</code> to the <code>/transactions</code> endpoint, the <%= link_to "transaction model", "https://github.com/evheath/cardflight/blob/main/app/models/transaction.rb" %> is responsible for parsing the message and creating a new transaction.
+</p>
+<p>
+While I don't have a function exactly named <code>processTransaction</code>, the processing happens in the transaction's <code>parse_raw_message</code> method all the same:
+</p>
+<pre>
+<code>
+class Transaction < ApplicationRecord
+  before_validation :parse_raw_message, on: :create
+  # ...
+  private
+    # ...
+    def parse_raw_message
+      return if raw_message.blank?
+
+      # parse the tags
+      working_string = raw_message.dup
+      until working_string.empty?
+        tag = pop_x_letters!(working_string, 1)
+        length = pop_x_letters!(working_string, 2).to_i
+        if length == 0
+          @parsing_error = "length for tag '#{tag}' could not be parsed from '#{raw_message}'"
+          return
+        end
+        case tag
+        when "1"
+          self.network = pop_x_letters!(working_string, length)
+        when "2"
+          amount = pop_x_letters!(working_string, length).to_f
+          self.amount = (amount * 100).to_i
+        when "3"
+          self.merchant = pop_x_letters!(working_string, length).truncate(10, omission: "")
+        else
+          pop_x_letters!(working_string, length)
+        end
+      end
+
+      # handle transaction_descriptor
+      case self.network
+      when ""
+        @parsing_error = "network could not be parsed from '#{raw_message}'"
+      when "VISA"
+        self.transaction_descriptor = self.amount.to_s.rjust(8, "0")
+      else
+        self.transaction_descriptor = self.network.first(2) + "FFFF"
+      end
+    end
+    # ...
+end
+</code>
+</pre>
+<p>
+This method handles the heavy lifting of parsing out the <code>network</code>, <code>amount</code>, and <code>merchant</code> tags from the POSTed <code>raw_message</code> and creating the appropriate <code>transaction_descriptor</code>, all according to spec of course.
+
+This method is also capable of gracefully ignoring unrecognized tags so long as they are properly formatted.
+
+If a tag--recognized or not--is invalidly formatted, a parsing error will be set and no transaction created.
+
+</p>
+<p>
+One thing I observed is that handling duplicate tags is not specified in the spec, so this implementation simply uses the last tag it sees.
+
+E.g. <code>20522.00104VISA310BURGERBARN306COSTCO</code> will result in a transaction with <code>merchant</code> set to  <code>"COSTCO"</code> not <code>"BURGERBARN"</code>.
+</p>
+<p>
+Another observation is that the <code>transaction_descriptor</code> for <code>VISA</code> assumes that the amount is not more than 8 digits, which is a reasonable assumption for a credit card transaction. Since there was nothing in the spec on handling amounts larger than 8 digits, I am not handling that case. However, if asked how I would handle such a case, I would probably check the <code>length</code> of the amount and if it is greater than 8 digits, I would set a <code>@parsing_error</code> and return.
+</p>
+
+<h3>Creating <code>transaction_id</code></h3>
+
+<p>
+By default, Rails uses <code>id:integer</code> as the primary key for a model, so it is worth detailing how I created the <code>transaction_id</code> for this model.
+
+First lets look at the migration:
+</p>
+
+<pre>
+<code>
+class CreateTransactions < ActiveRecord::Migration[8.0]
+  def change
+    create_table :transactions, id: false do |t|
+      t.string :transaction_id, null: false, primary_key: true
+      # ...
+    end
+    add_index :transactions, :transaction_id, unique: true
+  end
+end
+</code>
+</pre>
+
+<p>
+This ensures the model is created without the default <code>id</code> column, and that the <code>transaction_id</code> is the primary key. Since sqlite doesn't support UUID fields out of the box, we need to handle their generation inside the model:
+</p>
+
+<pre>
+<code>
+class Transaction < ApplicationRecord
+  self.primary_key = "transaction_id"
+  # ...
+  before_create do
+    self.transaction_id ||= SecureRandom.uuid
+  end
+  #...
+end
+</code>
+</pre>
+
+<h3>Handling Output</h3>
+
+<p>
+
+After a valid transaction has been created, the user is redirected to the <code>/transactions/:transaction_id</code> page, which displays the transaction details as HTML using embedded ruby templates.
+
+For example, here is the most recent transaction in the database, rendered using an embedded ruby template partial:
+</p>
+
+<div style="border: 1px solid black; padding: 10px; margin: 10px;">
+<%= render Transaction.last %>
+</div>
+
+<p>
+If you haven't yet already,  <%= link_to "go create a transaction", new_transaction_path %> and check out the result either here or on the transaction's show page.
+</p>
+
+<p>
+The raw JSON of the transactions are made available at endpoints like <%= link_to "this", transaction_path(Transaction.last, format: :json) %>. Think of it as the output of <code>processTransaction("<%= Transaction.last().raw_message %>")</code>.
+</p>
+
+<h1>Part 2: SQL exercise</h1>
+
+<p>
+Assuming there is nothing to be done with timezones, the answer to the question is:
+</p>
+<pre>
+<code>
+SELECT customers.first_name, customers.last_name, addresses.street_address, addresses.city, addresses.state, addresses.zipcode
+FROM addresses 
+INNER JOIN customers ON customers.id = addresses.customer_id 
+WHERE addresses.primary_address = 1 
+  AND customers.active = 1 
+  AND customers.created_at BETWEEN '2024-01-01' AND '2024-07-01';
+</code>
+</pre>
+
+<p>
+How did I arrive at this answer? Not easily 😅. My SQL skills aren't on the same level as my Rails skills, so naturally I found the answer through ActiveRecord queries. First I created the following migrations:
+</p>
+
+<pre>
+<code>
+class CreateCustomers < ActiveRecord::Migration[8.0]
+  def change
+    create_table :customers do |t|
+      t.string :first_name
+      t.string :last_name
+      t.integer :active
+
+      t.timestamps
+    end
+  end
+end
+class CreateAddresses < ActiveRecord::Migration[8.0]
+  def change
+    create_table :addresses do |t|
+      t.references :customer, null: false, foreign_key: true
+      t.integer :primary_address
+      t.string :street_address
+      t.string :city
+      t.string :state
+      t.string :zipcode
+
+      t.timestamps
+    end
+  end
+end
+</code>
+</pre>
+
+<p>
+Then after seeding the database with data that matched the prompt, I played around with queries inside <code>bin/rails console</code> until I settled on the following:
+</p>
+<pre>
+<code>
+cardflight(dev)> start_date = Date.new(2024,1,1)
+cardflight(dev)> end_date = Date.new(2024,7,1)
+cardflight(dev)> Address.joins(:customer)
+cardflight(dev)>   .where(primary_address: 1)
+cardflight(dev)>   .where(customers: { active: 1 })
+cardflight(dev)>   .where(customers: { created_at: start_date..end_date })
+cardflight(dev)>
+  Address Load (0.3ms)  SELECT "addresses".* FROM "addresses" INNER JOIN "customers" ON "customers"."id" = "addresses"."customer_id" WHERE "addresses"."primary_address" = 1 AND "customers"."active" = 1 AND "customers"."created_at" BETWEEN '2024-01-01' AND '2024-07-01' /* loading for pp */ LIMIT 11 /*application='Cardflight'*/
+=>
+  id: 2,
+  customer_id: 1,
+  primary_address: 1,
+  street_address: "21 Oak Ln",
+  city: "Westbury",
+  state: "NY",
+  zipcode: "11590",
+  created_at: "2025-05-07 13:31:15.331000000 +0000",
+  updated_at: "2025-05-07 13:31:15.331000000 +0000"
+</code>
+</pre>
+
+<p>
+This got the data I needed, just not in the required format. From here I manually edited the <code>SELECT</code> statement of the generated SQL. To validate the final output, I ran the following inside <code>bin/rails db</code>:
+</p>
+
+<pre>
+<code>
+sqlite> SELECT customers.first_name, customers.last_name, addresses.street_address, addresses.city, addresses.state, addresses.zipcode
+...>    FROM addresses
+...>    INNER JOIN customers ON customers.id = addresses.customer_id
+...>    WHERE addresses.primary_address = 1
+...>    AND customers.active = 1
+...>    AND customers.created_at BETWEEN '2024-01-01' AND '2024-07-01';
+Sam|Smith|21 Oak Ln|Westbury|NY|11590
+</code>
+</pre>
+
+<h1>Conclusion</h1>
+<p>
+Thank you for your consideration! I hope you enjoyed seeing my submission as much as I enjoyed building it. This was the first time I've ever made anything using embedded ruby templates--typically I use React for the frontend--so I developed a new appreciation for the power of Rails. Lastly, I am very impressed with Kamal's ability to deploy Rails apps; it feels like I am running my own Heroku!
+</p>
+
