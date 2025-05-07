@@ -74,6 +74,8 @@ This method is also capable of gracefully ignoring unrecognized tags so long as 
 
 If a tag--recognized or not--is invalidly formatted, a parsing error will be set and no transaction created.
 
+Check out the unit tests for the logic <a href="https://github.com/evheath/cardflight/blob/main/test/models/transaction_test.rb">here</a>
+
 </p>
 <p>
 One thing I observed is that handling duplicate tags is not specified in the spec, so this implementation simply uses the last tag it sees.
