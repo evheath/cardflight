@@ -39,4 +39,12 @@ class TransactionTest < ActiveSupport::TestCase
     t = Transaction.new
     assert_equal t.version, t.as_json[:version]
   end
+
+  test "ignores extra tags" do
+    t = Transaction.create(raw_message: "309SMAINFRMR108DISCOVER2070100.95502QS702XX")
+    t.valid?
+    assert t.transaction_id.present?
+    assert t.transaction_id.is_a?(String)
+    assert t.transaction_id.match?(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
+  end
 end

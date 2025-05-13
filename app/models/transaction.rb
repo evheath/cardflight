@@ -44,6 +44,9 @@ class Transaction < ApplicationRecord
           self.amount = (amount * 100).to_i
         when "3"
           self.merchant = pop_x_letters!(working_string, length).truncate(10, omission: "")
+        when "5"
+          # 103JCB401X502QS316COSTSAVERGROCERY20564.80
+          self.auth_code = pop_x_letters!(working_string, length)
         else
           pop_x_letters!(working_string, length)
         end

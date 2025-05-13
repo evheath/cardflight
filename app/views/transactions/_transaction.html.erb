@@ -34,4 +34,12 @@
     <%= transaction.raw_message %>
   </p>
 
+  <% if transaction.auth_code %>
+    <p>
+      <strong>auth code:</strong>
+      <%= transaction.auth_code %>
+    </p>
+  <% end %>
+
+
 </div>

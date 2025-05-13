@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_07_131801) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_12_192750) do
   create_table "addresses", force: :cascade do |t|
     t.integer "customer_id", null: false
     t.integer "primary_address"
@@ -39,6 +39,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_07_131801) do
     t.string "network"
     t.integer "amount"
     t.string "transaction_descriptor"
+    t.string "auth_code"
     t.index ["transaction_id"], name: "index_transactions_on_transaction_id", unique: true
   end
 
